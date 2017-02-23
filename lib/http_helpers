@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+
+function echo_response_default_headers() { 
+  # DATE=$(date +"%a, %d %b %Y %H:%M:%S %Z")
+  echo -e "Date: $(date -u "+%a, %d %b %Y %T GMT")\r"
+  # echo -e "Expires: $(date -u "+%a, %d %b %Y %T GMT")\r"
+  echo -e "Connection: close\r"
+
+  echo -e "Cache-Control: no-cache, no-store, must-revalidate\r"
+  echo -e "Pragma: no-cache\r"
+  echo -e "Expires: 0\r"
+}
+export -f echo_response_default_headers
+
+function echo_response_status_line() { 
+  local STATUS_CODE STATUS_TEXT
+  STATUS_CODE=${1-200}
+  STATUS_TEXT=${2-OK}
+  log "response: ${STATUS_CODE} ${STATUS_TEXT}"
+  echo -e "HTTP/1.1 ${STATUS_CODE} ${STATUS_TEXT}\r"
+}
+export -f echo_response_status_line
+
+function get_header_value() { 
+  header_key="$1"
+  sed -e "/^${header_key}/I!d" \
+      -e "s/^${header_key}: \(.*\)\$/\1/gi"
+}
+
+function urldecode() {
+  INPUT="$@"
+  url_encoded="${INPUT//+/ }"
+  printf '%b\n' "${url_encoded//%/\\x}"
+}
+
+function urlencode() {
+  echo -n "$@" | while IFS= read -n 1 C; do 
+    case $C in
+        [a-zA-Z0-9.~_-]) printf "$C" ;;
+        *) printf '%%%02X' "'$C" ;; 
+    esac
+  done
+  printf '\n'
+}
+
